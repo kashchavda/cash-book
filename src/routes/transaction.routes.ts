@@ -7,6 +7,11 @@ import {
   updateTransaction
 } from "../controllers/transaction.controller";
 
+import {
+  uploadTransactionAttachment,
+  getTransactionAttachment
+} from "../controllers/funds.controller";
+
 import { searchTransactions } from "../controllers/searchview.controller";
 
 const router = express.Router();
@@ -21,5 +26,11 @@ router.get("/location/:locationId", getTransactionsByLocation);
 router.put("/update/:id", updateTransaction);
 
 router.delete("/delete/:id", deleteTransaction);
+
+router.get("/attachment/:id", getTransactionAttachment);
+router.post("/attachment/:id", uploadTransactionAttachment);
+
+
+
 
 export default router;

@@ -1,3 +1,4 @@
+import path from "path";
 import express from "express";
 import authRoutes from "./routes/auth.routes";
 import dashboardRoutes from "./routes/dashboard.routes";
@@ -10,6 +11,7 @@ import transactionRoutes from "./routes/transaction.routes";
 import locationRoutes from "./routes/location.routes";
 import notificationRoutes from "./routes/notification.routes";
 import invoiceRoutes from "./routes/invoice.routes"; 
+import fundsRoutes from "./routes/funds.routes";
 
 
 
@@ -29,6 +31,8 @@ app.use("/api/transactions", transactionRoutes);
 app.use("/api/locations", locationRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/invoices", invoiceRoutes);
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+app.use("/api/funds", fundsRoutes);
 
 
 export default app;

@@ -33,6 +33,18 @@ const transactionSchema = new mongoose.Schema(
       type: String,
       enum: ["paid", "pending", "partial"],
       default: "paid"
+    },
+
+    // ✅ ADD THESE TWO FIELDS
+    attachmentUrl: {
+      type: String,
+      default: null
+    },
+
+    attachmentType: {
+      type: String,
+      enum: ["image", "pdf", "none"],
+      default: "none"
     }
   },
   { timestamps: true }
