@@ -11,7 +11,7 @@ const createDummyUser = async () => {
     console.log("MongoDB Connected");
 
     const email = "kashchavda1209@gmail.com";
-    const password = "123456";
+    const password = "12345678";
 
     const existingUser = await User.findOne({ email });
 

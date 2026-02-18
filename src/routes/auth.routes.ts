@@ -2,6 +2,7 @@ import express from "express";
 import { body } from "express-validator";
 
 import {
+  registerUser,
   loginUser,
   forgotPassword,
   verifyOTP,
@@ -11,6 +12,19 @@ import {
 import { validateRequest } from "../middlewares/validation.middleware";
 
 const router = express.Router();
+
+router.post(
+  "/register",
+  [
+    body("name").notEmpty().withMessage("Name is required"),
+    body("email").isEmail().withMessage("Enter a valid email address"),
+    body("password")
+      .isLength({ min: 8 })
+      .withMessage("Password must be at least 8 characters")
+  ],
+  validateRequest,
+  registerUser
+);
 
 router.post(
   "/login",
@@ -50,12 +64,10 @@ router.post(
   [
     body("email").notEmpty().withMessage("Email is required"),
     body("email").isEmail().withMessage("Enter a valid email address"),
-
     body("newPassword").notEmpty().withMessage("New password is required"),
     body("newPassword")
       .isLength({ min: 8 })
       .withMessage("Password must be at least 8 characters"),
-
     body("confirmPassword").notEmpty().withMessage("Confirm password is required")
   ],
   validateRequest,

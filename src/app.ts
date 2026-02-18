@@ -12,6 +12,10 @@ import locationRoutes from "./routes/location.routes";
 import notificationRoutes from "./routes/notification.routes";
 import invoiceRoutes from "./routes/invoice.routes"; 
 import fundsRoutes from "./routes/funds.routes";
+import billRoutes from "./routes/bill.routes";
+import fundRoutes from "./routes/funds.routes";
+import userRoutes from "./routes/user.routes";
+import profileRoutes from "./routes/profile.routes";
 
 
 
@@ -33,6 +37,11 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/invoices", invoiceRoutes);
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 app.use("/api/funds", fundsRoutes);
+app.use("/api/bills", billRoutes);
+app.use("/api/funds", fundRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/profile", profileRoutes);
+// app.use("/uploads", express.static("uploads"));
 
 
 export default app;

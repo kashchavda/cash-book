@@ -1,19 +1,94 @@
 import { Request, Response } from "express";
-import { Transaction } from "../models/transaction.model";
+import { Fund } from "../models/fund.model";
 import path from "path";
 import fs from "fs";
 
-export const uploadTransactionAttachment = async (
-  req: Request,
-  res: Response
-) => {
+export const createFund = async (req: Request, res: Response) => {
+  try {
+    const fund = await Fund.create(req.body);
+
+    return res.status(201).json({
+      message: "Fund created successfully",
+      data: fund
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      message: "Server error",
+      error: error.message
+    });
+  }
+};
+
+export const getAllFunds = async (req: Request, res: Response) => {
+  try {
+    const funds = await Fund.find().sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      message: "Funds fetched successfully",
+      data: funds
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      message: "Server error",
+      error: error.message
+    });
+  }
+};
+
+export const getFundById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    const transaction = await Transaction.findById(id);
+    const fund = await Fund.findById(id);
 
-    if (!transaction) {
-      return res.status(404).json({ message: "Transaction not found" });
+    if (!fund) {
+      return res.status(404).json({ message: "Fund not found" });
+    }
+
+    return res.status(200).json({
+      message: "Fund fetched successfully",
+      data: fund
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      message: "Server error",
+      error: error.message
+    });
+  }
+};
+
+export const updateFund = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const fund = await Fund.findByIdAndUpdate(id, req.body, { new: true });
+
+    if (!fund) {
+      return res.status(404).json({ message: "Fund not found" });
+    }
+
+    return res.status(200).json({
+      message: "Fund updated successfully",
+      data: fund
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      message: "Server error",
+      error: error.message
+    });
+  }
+};
+
+// =================== Upload Attachment ===================
+
+export const uploadFundAttachment = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const fund = await Fund.findById(id);
+
+    if (!fund) {
+      return res.status(404).json({ message: "Fund not found" });
     }
 
     if (!req.file) {
@@ -25,17 +100,32 @@ export const uploadTransactionAttachment = async (
     }`;
 
     let fileType: "image" | "pdf" | "none" = "none";
-    if (req.file.mimetype.includes("image")) fileType = "image";
-    if (req.file.mimetype.includes("pdf")) fileType = "pdf";
 
-    transaction.attachmentUrl = fileUrl;
-    transaction.attachmentType = fileType;
+    if (req.file.mimetype.startsWith("image/")) fileType = "image";
+    else if (req.file.mimetype === "application/pdf") fileType = "pdf";
 
-    await transaction.save();
+    // delete old attachment if exists
+    if (fund.attachmentUrl) {
+      const parts = fund.attachmentUrl.split("/uploads/");
+      if (parts.length > 1) {
+        const oldFilename = parts[1];
+        const oldPath = path.join(process.cwd(), "uploads", oldFilename);
+
+        if (fs.existsSync(oldPath)) {
+          fs.unlinkSync(oldPath);
+        }
+      }
+    }
+
+    fund.attachmentUrl = fileUrl;
+    fund.attachmentType = fileType;
+
+    await fund.save();
 
     return res.status(200).json({
       message: "Attachment uploaded successfully",
-      data: transaction
+      attachmentUrl: fund.attachmentUrl,
+      attachmentType: fund.attachmentType
     });
   } catch (error: any) {
     return res.status(500).json({
@@ -45,52 +135,27 @@ export const uploadTransactionAttachment = async (
   }
 };
 
-export const getTransactionAttachment = async (req: Request, res: Response) => {
+export const downloadFundAttachment = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    const transaction = await Transaction.findById(id);
+    const fund = await Fund.findById(id);
 
-    if (!transaction) {
-      return res.status(404).json({ message: "Transaction not found" });
+    if (!fund) {
+      return res.status(404).json({ message: "Fund not found" });
     }
 
-    if (!transaction.attachmentUrl) {
+    if (!fund.attachmentUrl) {
       return res.status(404).json({ message: "No attachment found" });
     }
 
-    return res.status(200).json({
-      message: "Attachment fetched successfully",
-      attachmentUrl: transaction.attachmentUrl,
-      attachmentType: transaction.attachmentType
-    });
-  } catch (error: any) {
-    return res.status(500).json({
-      message: "Server error",
-      error: error.message
-    });
-  }
-};
+    const parts = fund.attachmentUrl.split("/uploads/");
 
-export const downloadTransactionAttachment = async (
-  req: Request,
-  res: Response
-) => {
-  try {
-    const { id } = req.params;
-
-    const transaction = await Transaction.findById(id);
-
-    if (!transaction) {
-      return res.status(404).json({ message: "Transaction not found" });
+    if (parts.length < 2) {
+      return res.status(400).json({ message: "Invalid attachment url" });
     }
 
-    if (!transaction.attachmentUrl) {
-      return res.status(404).json({ message: "No attachment found" });
-    }
-
-    const filename = transaction.attachmentUrl.split("/uploads/")[1];
-
+    const filename = parts[1];
     const filePath = path.join(process.cwd(), "uploads", filename);
 
     if (!fs.existsSync(filePath)) {
@@ -106,30 +171,33 @@ export const downloadTransactionAttachment = async (
   }
 };
 
-export const deleteTransaction = async (req: Request, res: Response) => {
+export const deleteFund = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    const transaction = await Transaction.findById(id);
+    const fund = await Fund.findById(id);
 
-    if (!transaction) {
-      return res.status(404).json({ message: "Transaction not found" });
+    if (!fund) {
+      return res.status(404).json({ message: "Fund not found" });
     }
 
-    // delete file from uploads folder also
-    if (transaction.attachmentUrl) {
-      const filename = transaction.attachmentUrl.split("/uploads/")[1];
-      const filePath = path.join(process.cwd(), "uploads", filename);
+    // delete file from uploads folder
+    if (fund.attachmentUrl) {
+      const parts = fund.attachmentUrl.split("/uploads/");
+      if (parts.length > 1) {
+        const filename = parts[1];
+        const filePath = path.join(process.cwd(), "uploads", filename);
 
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
       }
     }
 
-    await Transaction.findByIdAndDelete(id);
+    await Fund.findByIdAndDelete(id);
 
     return res.status(200).json({
-      message: "Transaction deleted successfully"
+      message: "Fund deleted successfully"
     });
   } catch (error: any) {
     return res.status(500).json({

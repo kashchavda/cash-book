@@ -1,5 +1,32 @@
 import mongoose from "mongoose";
 
+const itemEntrySchema = new mongoose.Schema(
+  {
+    qty: { type: Number, required: true },
+    rate: { type: Number, required: true },
+    gst: { type: Number, default: 0 }
+  },
+  { _id: false }
+);
+
+const itemSchema = new mongoose.Schema(
+  {
+    itemName: { type: String, required: true },
+
+    locationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Location",
+      required: true
+    },
+
+    entries: {
+      type: [itemEntrySchema],
+      default: []
+    }
+  },
+  { timestamps: true }
+);
+
 const transactionSchema = new mongoose.Schema(
   {
     type: {
@@ -14,7 +41,8 @@ const transactionSchema = new mongoose.Schema(
     },
 
     description: {
-      type: String
+      type: String,
+      default: null
     },
 
     supervisorId: {
@@ -35,7 +63,6 @@ const transactionSchema = new mongoose.Schema(
       default: "paid"
     },
 
-    // ✅ ADD THESE TWO FIELDS
     attachmentUrl: {
       type: String,
       default: null
@@ -45,6 +72,23 @@ const transactionSchema = new mongoose.Schema(
       type: String,
       enum: ["image", "pdf", "none"],
       default: "none"
+    },
+
+    transferLocationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Location",
+      default: null
+    },
+
+    transferId: {
+      type: String,
+      default: null
+    },
+
+    // ITEMS FEATURE ADDED
+    items: {
+      type: [itemSchema],
+      default: []
     }
   },
   { timestamps: true }
