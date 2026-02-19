@@ -16,6 +16,7 @@ import billRoutes from "./routes/bill.routes";
 import fundRoutes from "./routes/funds.routes";
 import userRoutes from "./routes/user.routes";
 import profileRoutes from "./routes/profile.routes";
+import businessRoutes from "./routes/business.routes";
 
 
 
@@ -41,7 +42,7 @@ app.use("/api/bills", billRoutes);
 app.use("/api/funds", fundRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/profile", profileRoutes);
-// app.use("/uploads", express.static("uploads"));
+app.use("/api/business", businessRoutes);
 
 
 export default app;

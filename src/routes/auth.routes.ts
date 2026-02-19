@@ -6,10 +6,14 @@ import {
   loginUser,
   forgotPassword,
   verifyOTP,
-  resetPassword
+  resetPassword,
+  requestEmailChange,
+  verifyEmailChange,
+  logoutUser
 } from "../controllers/auth.controller";
 
 import { validateRequest } from "../middlewares/validation.middleware";
+import { protect } from "../middlewares/auth.middleware";
 
 const router = express.Router();
 
@@ -18,9 +22,7 @@ router.post(
   [
     body("name").notEmpty().withMessage("Name is required"),
     body("email").isEmail().withMessage("Enter a valid email address"),
-    body("password")
-      .isLength({ min: 8 })
-      .withMessage("Password must be at least 8 characters")
+    body("password").isLength({ min: 8 }).withMessage("Password must be at least 8 characters")
   ],
   validateRequest,
   registerUser
@@ -36,6 +38,8 @@ router.post(
   validateRequest,
   loginUser
 );
+
+router.post("/logout", protect, logoutUser);
 
 router.post(
   "/forgot-password",
@@ -65,13 +69,31 @@ router.post(
     body("email").notEmpty().withMessage("Email is required"),
     body("email").isEmail().withMessage("Enter a valid email address"),
     body("newPassword").notEmpty().withMessage("New password is required"),
-    body("newPassword")
-      .isLength({ min: 8 })
-      .withMessage("Password must be at least 8 characters"),
+    body("newPassword").isLength({ min: 8 }).withMessage("Password must be at least 8 characters"),
     body("confirmPassword").notEmpty().withMessage("Confirm password is required")
   ],
   validateRequest,
   resetPassword
+);
+
+router.post(
+  "/change-email/request",
+  [
+    body("userId").notEmpty().withMessage("User ID is required"),
+    body("newEmail").isEmail().withMessage("Enter a valid email address")
+  ],
+  validateRequest,
+  requestEmailChange
+);
+
+  router.post(
+  "/change-email/verify",
+  [
+    body("userId").notEmpty().withMessage("User ID is required"),
+    body("otp").notEmpty().withMessage("OTP is required")
+  ],
+  validateRequest,
+  verifyEmailChange
 );
 
 export default router;
