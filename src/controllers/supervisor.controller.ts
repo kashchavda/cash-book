@@ -1,162 +1,149 @@
 import { Request, Response } from "express";
-import { Supervisor } from "../models/supervisor.model";
-import { createNotification } from "../services/notification.service";
+import { User } from "../models/user.model";
+import bcrypt from "bcryptjs";
 
 export const createSupervisor = async (req: Request, res: Response) => {
   try {
-    const { name, mobile, email } = req.body;
+    const {
+      name,
+      email,
+      phone,
+      password,
+      state,
+      city,
+      address,
+      bloodGroup,
+      joiningDate,
+      salaryFrequency,
+      relationship,
+      countryCode,
+    } = req.body;
 
-    if (!name || !mobile || !email) {
-      return res.status(400).json({ message: "All fields are required" });
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: "Required fields missing" });
     }
 
-    const existing = await Supervisor.findOne({ email });
+    const existing = await User.findOne({ email });
     if (existing) {
       return res.status(400).json({ message: "Email already exists" });
     }
 
-    const lastSupervisor = await Supervisor.findOne().sort({ createdAt: -1 });
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    let newNumber = 1;
-
-    if (lastSupervisor?.supervisorId) {
-      const lastNumber = parseInt(lastSupervisor.supervisorId.replace("S", ""));
-      newNumber = lastNumber + 1;
-    }
-
-    const supervisorId = "S" + newNumber.toString().padStart(3, "0");
-
-    const supervisor = await Supervisor.create({
-      supervisorId,
+    const supervisor = await User.create({
       name,
-      mobile,
-      email
+      email,
+      phone,
+      password: hashedPassword,
+      role: "supervisor",
+      state,
+      city,
+      address,
+      bloodGroup,
+      joiningDate,
+      salaryFrequency,
+      relationship,
+      countryCode,
     });
 
-    await createNotification(
-      "New supervisor created",
-      `New supervisor account created: ${supervisor.name} (${supervisor.supervisorId})`,
-      "supervisor"
-    );
-
-    return res.status(201).json({
+    res.status(201).json({
       message: "Supervisor created successfully",
-      data: supervisor
+      data: supervisor,
     });
   } catch (error: any) {
-    return res.status(500).json({
-      message: "Server error",
-      error: error.message
-    });
+    res.status(500).json({ message: error.message });
   }
 };
 
 export const getAllSupervisors = async (req: Request, res: Response) => {
   try {
-    const supervisors = await Supervisor.find().sort({ createdAt: -1 });
+    const { page = 1, limit = 10, search = "" } = req.query;
 
-    return res.status(200).json({
-      message: "Supervisors fetched successfully",
-      total: supervisors.length,
-      data: supervisors
+    const query: any = { role: "supervisor" };
+
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
+        { phone: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    const supervisors = await User.find(query)
+      .skip((Number(page) - 1) * Number(limit))
+      .limit(Number(limit))
+      .sort({ createdAt: -1 });
+
+    const total = await User.countDocuments(query);
+
+    res.status(200).json({
+      total,
+      page: Number(page),
+      pages: Math.ceil(total / Number(limit)),
+      data: supervisors,
     });
   } catch (error: any) {
-    return res.status(500).json({
-      message: "Server error",
-      error: error.message
-    });
+    res.status(500).json({ message: error.message });
   }
 };
 
 export const getSupervisorById = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
-
-    const supervisor = await Supervisor.findById(id);
+    const supervisor = await User.findOne({
+      _id: req.params.id,
+      role: "supervisor",
+    });
 
     if (!supervisor) {
       return res.status(404).json({ message: "Supervisor not found" });
     }
 
-    return res.status(200).json({
-      message: "Supervisor fetched successfully",
-      data: supervisor
-    });
+    res.status(200).json({ data: supervisor });
   } catch (error: any) {
-    return res.status(500).json({
-      message: "Server error",
-      error: error.message
-    });
+    res.status(500).json({ message: error.message });
   }
 };
 
 export const updateSupervisor = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, mobile, email } = req.body;
 
-    const supervisor = await Supervisor.findById(id);
+    const supervisor = await User.findOne({
+      _id: id,
+      role: "supervisor",
+    });
 
     if (!supervisor) {
       return res.status(404).json({ message: "Supervisor not found" });
     }
 
-    if (email) {
-      const existing = await Supervisor.findOne({ email, _id: { $ne: id } });
-      if (existing) {
-        return res.status(400).json({ message: "Email already exists" });
-      }
+    if (req.body.password) {
+      req.body.password = await bcrypt.hash(req.body.password, 10);
     }
 
-    supervisor.name = name || supervisor.name;
-    supervisor.mobile = mobile || supervisor.mobile;
-    supervisor.email = email || supervisor.email;
+    const updated = await User.findByIdAndUpdate(id, req.body, {
+      new: true,
+      runValidators: true,
+    });
 
-    await supervisor.save();
-
-    await createNotification(
-      "Supervisor updated",
-      `Supervisor updated: ${supervisor.name} (${supervisor.supervisorId})`,
-      "supervisor"
-    );
-
-    return res.status(200).json({
+    res.status(200).json({
       message: "Supervisor updated successfully",
-      data: supervisor
+      data: updated,
     });
   } catch (error: any) {
-    return res.status(500).json({
-      message: "Server error",
-      error: error.message
-    });
+    res.status(500).json({ message: error.message });
   }
 };
 
+// SOFT DELETE SUPERVISOR
 export const deleteSupervisor = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
-
-    const supervisor = await Supervisor.findById(id);
-
-    if (!supervisor) {
-      return res.status(404).json({ message: "Supervisor not found" });
-    }
-
-    await Supervisor.findByIdAndDelete(id);
-
-    await createNotification(
-      "Supervisor deleted",
-      `Supervisor deleted: ${supervisor.name} (${supervisor.supervisorId})`,
-      "supervisor"
-    );
-
-    return res.status(200).json({
-      message: "Supervisor deleted successfully"
+    await User.findByIdAndUpdate(req.params.id, {
+      role: "user",
     });
+
+    res.status(200).json({ message: "Supervisor removed successfully" });
   } catch (error: any) {
-    return res.status(500).json({
-      message: "Server error",
-      error: error.message
-    });
+    res.status(500).json({ message: error.message });
   }
 };

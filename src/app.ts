@@ -17,6 +17,9 @@ import fundRoutes from "./routes/funds.routes";
 import userRoutes from "./routes/user.routes";
 import profileRoutes from "./routes/profile.routes";
 import businessRoutes from "./routes/business.routes";
+import attendanceRoutes from "./routes/attendance.routes";
+import salaryRoutes from "./routes/salary.routes";
+import permissionRoutes from "./routes/permission.routes";
 
 
 
@@ -43,6 +46,8 @@ app.use("/api/funds", fundRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/business", businessRoutes);
-
+app.use("/api/attendance", attendanceRoutes);
+app.use("/api/salary", salaryRoutes);
+app.use("/api/permissions", permissionRoutes);
 
 export default app;

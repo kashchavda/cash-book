@@ -4,15 +4,17 @@ import {
   getAllSubAdmins,
   getSubAdminById,
   updateSubAdmin,
-  deleteSubAdmin
+  deleteSubAdmin,
+  toggleStatus
 } from "../controllers/subadmin.controller";
 
 const router = express.Router();
 
-router.post("/create", createSubAdmin);
-router.get("/all", getAllSubAdmins);
+router.post("/", createSubAdmin);
+router.get("/", getAllSubAdmins);
 router.get("/:id", getSubAdminById);
-router.put("/update/:id", updateSubAdmin);
-router.delete("/delete/:id", deleteSubAdmin);
+router.put("/:id", updateSubAdmin);
+router.delete("/:id", deleteSubAdmin);
+router.patch("/status/:id", toggleStatus);
 
 export default router;

@@ -4,23 +4,47 @@ import { createNotification } from "../services/notification.service";
 
 export const createVendor = async (req: Request, res: Response) => {
   try {
-    const { name, mobile, email } = req.body;
+    const {
+      name,
+      contactPerson,
+      category,
+      mobile,
+      email,
+      gstNumber,
+      panNumber,
+      aadhaarNumber,
+      upiId,
+      pincode,
+      city,
+      state,
+      buildingName,
+      landmark
+    } = req.body;
 
-    if (!name || !mobile || !email) {
-      return res.status(400).json({ message: "All fields are required" });
+    if (
+      !name || !contactPerson || !category ||
+      !mobile || !email ||
+      !pincode || !city || !state
+    ) {
+      return res.status(400).json({ message: "Required fields missing" });
     }
 
-    const existing = await Vendor.findOne({ email });
+    const existing = await Vendor.findOne({
+      $or: [{ email }, { mobile }]
+    });
+
     if (existing) {
-      return res.status(400).json({ message: "Email already exists" });
+      return res.status(400).json({
+        message: "Email or Mobile already exists"
+      });
     }
 
-    const lastVendor = await Vendor.findOne().sort({ createdAt: -1 });
+    // Generate vendorId
+    const last = await Vendor.findOne().sort({ createdAt: -1 });
 
     let newNumber = 1;
-
-    if (lastVendor?.vendorId) {
-      const lastNumber = parseInt(lastVendor.vendorId.replace("V", ""));
+    if (last?.vendorId) {
+      const lastNumber = parseInt(last.vendorId.replace("V", ""));
       newNumber = lastNumber + 1;
     }
 
@@ -29,25 +53,34 @@ export const createVendor = async (req: Request, res: Response) => {
     const vendor = await Vendor.create({
       vendorId,
       name,
+      contactPerson,
+      category,
       mobile,
-      email
+      email,
+      gstNumber,
+      panNumber,
+      aadhaarNumber,
+      upiId,
+      pincode,
+      city,
+      state,
+      buildingName,
+      landmark
     });
 
     await createNotification(
-      "New vendor added",
-      `New vendor added: ${vendor.name}`,
+      "Vendor Added",
+      `Vendor created: ${vendor.name}`,
       "vendor"
     );
 
-    return res.status(201).json({
+    res.status(201).json({
       message: "Vendor created successfully",
       data: vendor
     });
+
   } catch (error: any) {
-    return res.status(500).json({
-      message: "Server error",
-      error: error.message
-    });
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -55,102 +88,93 @@ export const getAllVendors = async (req: Request, res: Response) => {
   try {
     const vendors = await Vendor.find().sort({ createdAt: -1 });
 
-    return res.status(200).json({
-      message: "Vendors fetched successfully",
+    res.status(200).json({
       total: vendors.length,
       data: vendors
     });
+
   } catch (error: any) {
-    return res.status(500).json({
-      message: "Server error",
-      error: error.message
-    });
+    res.status(500).json({ message: error.message });
   }
 };
 
 export const getVendorById = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
-
-    const vendor = await Vendor.findById(id);
+    const vendor = await Vendor.findById(req.params.id);
 
     if (!vendor) {
       return res.status(404).json({ message: "Vendor not found" });
     }
 
-    return res.status(200).json({
-      message: "Vendor fetched successfully",
-      data: vendor
-    });
+    res.status(200).json({ data: vendor });
+
   } catch (error: any) {
-    return res.status(500).json({
-      message: "Server error",
-      error: error.message
-    });
+    res.status(500).json({ message: error.message });
   }
 };
 
 export const updateVendor = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
-    const { name, mobile, email } = req.body;
+    const updated = await Vendor.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
 
-    const vendor = await Vendor.findById(id);
-
-    if (!vendor) {
+    if (!updated) {
       return res.status(404).json({ message: "Vendor not found" });
     }
 
-    if (email) {
-      const existing = await Vendor.findOne({ email, _id: { $ne: id } });
-      if (existing) {
-        return res.status(400).json({ message: "Email already exists" });
-      }
-    }
-
-    vendor.name = name || vendor.name;
-    vendor.mobile = mobile || vendor.mobile;
-    vendor.email = email || vendor.email;
-
-    await vendor.save();
-
-    return res.status(200).json({
+    res.status(200).json({
       message: "Vendor updated successfully",
-      data: vendor
+      data: updated
     });
+
   } catch (error: any) {
-    return res.status(500).json({
-      message: "Server error",
-      error: error.message
-    });
+    res.status(500).json({ message: error.message });
   }
 };
 
 export const deleteVendor = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const deleted = await Vendor.findByIdAndDelete(req.params.id);
 
-    const vendor = await Vendor.findById(id);
+    if (!deleted) {
+      return res.status(404).json({ message: "Vendor not found" });
+    }
+
+    await createNotification(
+      "Vendor Deleted",
+      `Vendor deleted: ${deleted.name}`,
+      "vendor"
+    );
+
+    res.status(200).json({
+      message: "Vendor deleted successfully"
+    });
+
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const toggleVendorStatus = async (req: Request, res: Response) => {
+  try {
+    const vendor = await Vendor.findById(req.params.id);
 
     if (!vendor) {
       return res.status(404).json({ message: "Vendor not found" });
     }
 
-    await Vendor.findByIdAndDelete(id);
+    vendor.status = !vendor.status;
+    await vendor.save();
 
-    await createNotification(
-      "Vendor deleted",
-      `Vendor deleted: ${vendor.name}`,
-      "vendor"
-    );
-
-    return res.status(200).json({
-      message: "Vendor deleted successfully"
+    res.status(200).json({
+      message: "Status updated",
+      data: vendor
     });
+
   } catch (error: any) {
-    return res.status(500).json({
-      message: "Server error",
-      error: error.message
-    });
+    res.status(500).json({ message: error.message });
   }
 };

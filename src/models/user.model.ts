@@ -4,22 +4,28 @@ export interface IUser extends Document {
   name: string;
   email: string;
   phone: string;
-  role: string;
-
+  role: "admin" | "user" | "supervisor" | "sub-admin";
   password: string;
-
   profilePhoto?: string;
+
+  // supervisor extra fields
+  state?: string;
+  city?: string;
+  address?: string;
+  bloodGroup?: string;
+  joiningDate?: Date;
+  salaryFrequency?: "daily" | "weekly" | "monthly" | "yearly";
+  relationship?: string;
+  countryCode?: string;
 
   otp?: string | null;
   otpExpire?: Date | null;
   otpVerified?: boolean;
 
-  // change email otp
   emailChangeOtp?: string | null;
   emailChangeOtpExpiry?: Date | null;
   pendingNewEmail?: string | null;
 
-  // notification settings
   notificationSettings: {
     enableAllNotifications: boolean;
     enableSalesAlerts: boolean;
@@ -37,11 +43,28 @@ const userSchema = new Schema<IUser>(
 
     phone: { type: String, default: "" },
 
-    role: { type: String, default: "user" },
+    role: {
+      type: String,
+      enum: ["admin", "user", "supervisor", "sub-admin"],
+      default: "user",
+    },
 
     password: { type: String, required: true },
 
     profilePhoto: { type: String, default: "" },
+
+    // supervisor fields
+    state: { type: String },
+    city: { type: String },
+    address: { type: String },
+    bloodGroup: { type: String },
+    joiningDate: { type: Date },
+    salaryFrequency: {
+      type: String,
+      enum: ["daily", "weekly", "monthly", "yearly"],
+    },
+    relationship: { type: String },
+    countryCode: { type: String },
 
     otp: { type: String, default: null },
     otpExpire: { type: Date, default: null },
@@ -56,8 +79,8 @@ const userSchema = new Schema<IUser>(
       enableSalesAlerts: { type: Boolean, default: true },
       fundTransactionAlerts: { type: Boolean, default: true },
       newBillEntries: { type: Boolean, default: true },
-      attendanceUpdates: { type: Boolean, default: true }
-    }
+      attendanceUpdates: { type: Boolean, default: true },
+    },
   },
   { timestamps: true }
 );

@@ -6,18 +6,73 @@ const vendorSchema = new mongoose.Schema(
       type: String,
       unique: true
     },
+
+    // Business Info
     name: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    contactPerson: {
       type: String,
       required: true
     },
-    mobile: {
+    category: {
       type: String,
       required: true
+    },
+
+    // Contact
+    mobile: {
+      type: String,
+      required: true,
+      unique: true
     },
     email: {
       type: String,
       required: true,
-      unique: true
+      unique: true,
+      lowercase: true
+    },
+
+    // KYC
+    gstNumber: {
+      type: String
+    },
+    panNumber: {
+      type: String
+    },
+    aadhaarNumber: {
+      type: String
+    },
+    upiId: {
+      type: String
+    },
+
+    // Address
+    pincode: {
+      type: String,
+      required: true
+    },
+    city: {
+      type: String,
+      required: true
+    },
+    state: {
+      type: String,
+      required: true
+    },
+    buildingName: {
+      type: String
+    },
+    landmark: {
+      type: String
+    },
+
+    // Status
+    status: {
+      type: Boolean,
+      default: true
     }
   },
   { timestamps: true }

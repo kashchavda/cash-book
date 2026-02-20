@@ -6,7 +6,11 @@ export interface AuthRequest extends Request {
   user?: any;
 }
 
-export const protect = async (req: AuthRequest, res: Response, next: NextFunction) => {
+export const protect = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
 
@@ -20,11 +24,18 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
       return res.status(401).json({ message: "Token has been logged out" });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET as string
+    );
+
     req.user = decoded;
 
     next();
   } catch (error: any) {
-    return res.status(401).json({ message: "Unauthorized: Invalid token", error: error.message });
+    return res.status(401).json({
+      message: "Unauthorized: Invalid token",
+      error: error.message,
+    });
   }
 };

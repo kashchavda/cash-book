@@ -4,15 +4,15 @@ import {
   getAllSupervisors,
   getSupervisorById,
   updateSupervisor,
-  deleteSupervisor
+  deleteSupervisor,
 } from "../controllers/supervisor.controller";
 
 const router = express.Router();
 
-router.post("/create", createSupervisor);
-router.get("/all", getAllSupervisors);
+router.post("/", createSupervisor);
+router.get("/", getAllSupervisors);
 router.get("/:id", getSupervisorById);
-router.put("/update/:id", updateSupervisor);
-router.delete("/delete/:id", deleteSupervisor);
+router.put("/:id", updateSupervisor);
+router.delete("/:id", deleteSupervisor);
 
 export default router;

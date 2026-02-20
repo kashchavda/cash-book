@@ -1,20 +1,49 @@
 import { Request, Response } from "express";
 import { SubAdmin } from "../models/subadmin.model";
-import { createNotification } from "../services/notification.service";
 
 export const createSubAdmin = async (req: Request, res: Response) => {
   try {
-    const { name, mobile, email } = req.body;
+    const {
+      name,
+      email,
+      phone,
+      salary,
+      salaryType,
+      joiningDate,
+      pincode,
+      city,
+      state,
+      guardianName,
+      guardianPhone,
+      relation
+    } = req.body;
 
-    if (!name || !mobile || !email) {
+    // Validation
+    if (
+      !name || !email || !phone || !salary || !salaryType ||
+      !pincode || !city || !state ||
+      !guardianName || !guardianPhone || !relation
+    ) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    const lastSubAdmin = await SubAdmin.findOne().sort({ createdAt: -1 });
+    // Duplicate check
+    const existing = await SubAdmin.findOne({
+      $or: [{ email }, { phone }]
+    });
+
+    if (existing) {
+      return res.status(400).json({
+        message: "Email or Phone already exists"
+      });
+    }
+
+    // Generate ID
+    const last = await SubAdmin.findOne().sort({ createdAt: -1 });
 
     let newNumber = 1;
-    if (lastSubAdmin?.subAdminId) {
-      const lastNumber = parseInt(lastSubAdmin.subAdminId.replace("A", ""));
+    if (last?.subAdminId) {
+      const lastNumber = parseInt(last.subAdminId.replace("A", ""));
       newNumber = lastNumber + 1;
     }
 
@@ -23,23 +52,27 @@ export const createSubAdmin = async (req: Request, res: Response) => {
     const subAdmin = await SubAdmin.create({
       subAdminId,
       name,
-      mobile,
-      email
+      email,
+      phone,
+      salary,
+      salaryType,
+      joiningDate,
+      pincode,
+      city,
+      state,
+      guardianName,
+      guardianPhone,
+      relation
     });
 
-    await createNotification(
-      "New sub admin added",
-      `New sub admin account created: ${subAdmin.name}`,
-      "sub_admin"
-    );
-
-    return res.status(201).json({
+    res.status(201).json({
       message: "Sub Admin created successfully",
       data: subAdmin
     });
+
   } catch (error: any) {
-    return res.status(500).json({
-      message: "Server error",
+    res.status(500).json({
+      message: "Server Error",
       error: error.message
     });
   }
@@ -49,101 +82,85 @@ export const getAllSubAdmins = async (req: Request, res: Response) => {
   try {
     const subAdmins = await SubAdmin.find().sort({ createdAt: -1 });
 
-    return res.status(200).json({
-      message: "Sub Admins fetched successfully",
+    res.status(200).json({
       total: subAdmins.length,
       data: subAdmins
     });
+
   } catch (error: any) {
-    return res.status(500).json({
-      message: "Server error",
-      error: error.message
-    });
+    res.status(500).json({ message: error.message });
   }
 };
 
 export const getSubAdminById = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
-
-    const subAdmin = await SubAdmin.findById(id);
+    const subAdmin = await SubAdmin.findById(req.params.id);
 
     if (!subAdmin) {
       return res.status(404).json({ message: "Sub Admin not found" });
     }
 
-    return res.status(200).json({
-      message: "Sub Admin fetched successfully",
-      data: subAdmin
-    });
+    res.status(200).json({ data: subAdmin });
+
   } catch (error: any) {
-    return res.status(500).json({
-      message: "Server error",
-      error: error.message
-    });
+    res.status(500).json({ message: error.message });
   }
 };
 
 export const updateSubAdmin = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
-    const { name, mobile, email } = req.body;
+    const updated = await SubAdmin.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
 
-    const subAdmin = await SubAdmin.findById(id);
-
-    if (!subAdmin) {
+    if (!updated) {
       return res.status(404).json({ message: "Sub Admin not found" });
     }
 
-    subAdmin.name = name || subAdmin.name;
-    subAdmin.mobile = mobile || subAdmin.mobile;
-    subAdmin.email = email || subAdmin.email;
-
-    await subAdmin.save();
-
-    await createNotification(
-      "Sub Admin updated",
-      `Sub admin updated: ${subAdmin.name}`,
-      "sub_admin"
-    );
-
-    return res.status(200).json({
-      message: "Sub Admin updated successfully",
-      data: subAdmin
+    res.status(200).json({
+      message: "Updated successfully",
+      data: updated
     });
+
   } catch (error: any) {
-    return res.status(500).json({
-      message: "Server error",
-      error: error.message
-    });
+    res.status(500).json({ message: error.message });
   }
 };
 
 export const deleteSubAdmin = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const deleted = await SubAdmin.findByIdAndDelete(req.params.id);
 
-    const subAdmin = await SubAdmin.findById(id);
+    if (!deleted) {
+      return res.status(404).json({ message: "Sub Admin not found" });
+    }
+
+    res.status(200).json({ message: "Deleted successfully" });
+
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const toggleStatus = async (req: Request, res: Response) => {
+  try {
+    const subAdmin = await SubAdmin.findById(req.params.id);
 
     if (!subAdmin) {
       return res.status(404).json({ message: "Sub Admin not found" });
     }
 
-    await SubAdmin.findByIdAndDelete(id);
+    subAdmin.status = !subAdmin.status;
+    await subAdmin.save();
 
-    await createNotification(
-      "Sub Admin deleted",
-      `Sub admin deleted: ${subAdmin.name}`,
-      "sub_admin"
-    );
-
-    return res.status(200).json({
-      message: "Sub Admin deleted successfully"
+    res.status(200).json({
+      message: "Status updated",
+      data: subAdmin
     });
+
   } catch (error: any) {
-    return res.status(500).json({
-      message: "Server error",
-      error: error.message
-    });
+    res.status(500).json({ message: error.message });
   }
 };
