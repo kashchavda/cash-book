@@ -10,34 +10,30 @@ export const createWorker = async (req: Request, res: Response) => {
       mobile,
       email,
       skillType,
-      pincode,
-      city,
-      state,
-      bloodGroup,
-      salary,
-      salaryType,
-      guardianName,
-      guardianMobile,
-      relation
+      salaryType
     } = req.body;
 
-    // Validate Required Fields
-    if (
-      !name || !mobile || !email || !skillType ||
-      !pincode || !city || !state ||
-      !bloodGroup || !salary ||
-      !guardianName || !guardianMobile || !relation
-    ) {
-      return res.status(400).json({ message: "All fields are required" });
+    if (!name || !mobile || !email) {
+      return res.status(400).json({
+        message: "Name, mobile and email are required"
+      });
     }
 
-    // Check duplicate email
     const existing = await Worker.findOne({ email });
     if (existing) {
-      return res.status(400).json({ message: "Email already exists" });
+      return res.status(400).json({
+        message: "Email already exists"
+      });
     }
 
-    // Auto generate workerId
+    const allowedSalaryTypes = ["daily", "weekly", "monthly", "yearly"];
+
+    if (salaryType && !allowedSalaryTypes.includes(salaryType)) {
+      return res.status(400).json({
+        message: "Invalid salary type"
+      });
+    }
+
     const count = await Worker.countDocuments();
     const workerId = "W" + (count + 1).toString().padStart(3, "0");
 
@@ -47,22 +43,8 @@ export const createWorker = async (req: Request, res: Response) => {
       mobile,
       email,
       skillType,
-      pincode,
-      city,
-      state,
-      bloodGroup,
-      salary,
-      salaryType,
-      guardianName,
-      guardianMobile,
-      relation
+      salaryType
     });
-
-    await createNotification(
-      "New Worker Created",
-      `Worker ${worker.name} (${worker.workerId}) added`,
-      "worker"
-    );
 
     return res.status(201).json({
       message: "Worker created successfully",
@@ -71,8 +53,7 @@ export const createWorker = async (req: Request, res: Response) => {
 
   } catch (error: any) {
     return res.status(500).json({
-      message: "Server error",
-      error: error.message
+      message: error.message
     });
   }
 };
@@ -168,19 +149,22 @@ export const deleteWorker = async (
       return res.status(400).json({ message: "Invalid worker ID" });
     }
 
-    const worker = await Worker.findByIdAndDelete(id);
+    const worker = await Worker.findById(id);
     if (!worker) {
       return res.status(404).json({ message: "Worker not found" });
     }
 
+    worker.isActive = false;
+    await worker.save();
+
     await createNotification(
       "Worker Deleted",
-      `Worker ${worker.name} deleted`,
+      `Worker ${worker.name} removed`,
       "worker"
     );
 
     return res.status(200).json({
-      message: "Worker deleted successfully"
+      message: "Worker removed successfully"
     });
 
   } catch (error: any) {

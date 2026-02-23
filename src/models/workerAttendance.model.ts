@@ -1,12 +1,12 @@
 import mongoose, { Schema, Document } from "mongoose";
 
-export interface IAttendance extends Document {
+export interface IWorkerAttendance extends Document {
   worker: mongoose.Types.ObjectId;
   date: Date;
   status: "present" | "absent" | "leave" | "holiday";
 }
 
-const attendanceSchema = new Schema<IAttendance>(
+const workerAttendanceSchema = new Schema<IWorkerAttendance>(
   {
     worker: {
       type: Schema.Types.ObjectId,
@@ -26,10 +26,10 @@ const attendanceSchema = new Schema<IAttendance>(
   { timestamps: true }
 );
 
-// Prevent duplicate attendance per worker per date
-attendanceSchema.index({ worker: 1, date: 1 }, { unique: true });
+// Prevent duplicate per worker per date
+workerAttendanceSchema.index({ worker: 1, date: 1 }, { unique: true });
 
-export const Attendance = mongoose.model<IAttendance>(
-  "Attendance",
-  attendanceSchema
+export const WorkerAttendance = mongoose.model<IWorkerAttendance>(
+  "WorkerAttendance",
+  workerAttendanceSchema
 );

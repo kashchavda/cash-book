@@ -20,6 +20,10 @@ import businessRoutes from "./routes/business.routes";
 import attendanceRoutes from "./routes/attendance.routes";
 import salaryRoutes from "./routes/salary.routes";
 import permissionRoutes from "./routes/permission.routes";
+import bankAccountRoutes from "./routes/bankAccount.routes";
+import reportRoutes from "./routes/report.routes";
+import vendorBillRoutes from "./routes/vendorBill.routes";
+import workerAttendanceRoutes from "./routes/workerAttendance.routes";
 
 
 
@@ -49,5 +53,9 @@ app.use("/api/business", businessRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/salary", salaryRoutes);
 app.use("/api/permissions", permissionRoutes);
+app.use("/api/bank-accounts", bankAccountRoutes);
+app.use("/api/reports", reportRoutes);
+app.use("/api/vendor-bill", vendorBillRoutes);
+app.use("/api/worker-attendance", workerAttendanceRoutes);
 
 export default app;
